@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH --job-name=OrbitAI
+#SBATCH --output="nnUnet2_OrbitAI_001_test.txt"
+#SBATCH --gres=gpu:tesla:1
+#SBATCH --ntasks=16
+#SBATCH --nodes=1
+#SBATCH --time=2-00:00:00
+#SBATCH --mem=96G
+#SBATCH --partition=gpu
+
+source ~/.bashrc
+conda activate nnunet
+
+export base_dir="$HOME/work/Orbit_AI_nnUnet"
+export dataset='Dataset001_test'
+export task='001'
+export OMP_NUM_THREADS=1
+
+export nnUNet_preprocessed=$base_dir/preproc
+export nnUNet_raw=$base_dir/nnUNet_raw
+export nnUNet_results=$base_dir/results
+
+
+cd $base_dir
+
+nnUNetv2_plan_and_preprocess -d $task --verify_dataset_integrity
+
+nnUNetv2_train $task 2d 1 #--npz
+nnUNetv2_train $task 3d_fullres 1 #--npz
+nnUNetv2_train $task 3d_lowres 1 #--npz

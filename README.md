@@ -1,6 +1,6 @@
 # Orbita AI
 
-code for the paper:
+code for the paper (citation pending):
 ```
 Deep Learning Model for Automated Segmentation of Orbital Structures in MRI Images
 ```

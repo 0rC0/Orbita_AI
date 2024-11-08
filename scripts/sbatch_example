@@ -1,30 +1,46 @@
 #!/bin/bash
-#SBATCH --job-name=OrbitAI
-#SBATCH --output="nnUnet2_OrbitAI_001_test.txt"
+#SBATCH --job-name=OrbitAI_5foldCV
+#SBATCH --output="nnUnet2_OrbitAI_5foldCV.txt"
 #SBATCH --gres=gpu:tesla:1
 #SBATCH --ntasks=16
 #SBATCH --nodes=1
 #SBATCH --time=2-00:00:00
-#SBATCH --mem=96G
+#SBATCH --mem=32G
 #SBATCH --partition=gpu
+#SBATCH --array=0-4%2
 
+tasks=(12 13 14 15)
+
+export task="0${tasks[$SLURM_ARRAY_TASK_ID]}"
+
+echo "task $task"
+export dataset="Dataset0${task}_5FoldCV"
+echo "Dataset $dataset"
+
+# Activate conda environment
 source ~/.bashrc
 conda activate nnunet
 
+# Set up nnUnet directories and environment variables
 export base_dir="$HOME/work/Orbit_AI_nnUnet"
-export dataset='Dataset001_test'
-export task='001'
-export OMP_NUM_THREADS=1
-
 export nnUNet_preprocessed=$base_dir/preproc
 export nnUNet_raw=$base_dir/nnUNet_raw
 export nnUNet_results=$base_dir/results
 
 
+
 cd $base_dir
 
+## Preprocess
 nnUNetv2_plan_and_preprocess -d $task --verify_dataset_integrity
 
-nnUNetv2_train $task 2d 1 #--npz
+## Train
+export OMP_NUM_THREADS=1
+#nnUNetv2_train $task 2d 0 #--npz
 nnUNetv2_train $task 3d_fullres 1 #--npz
-nnUNetv2_train $task 3d_lowres 1 #--npz
+
+## Test
+cd $nnUNet_raw/$dataset
+export test_dir="test_fold1"
+mkdir -p $test_dir
+nnUNetv2_predict -i ./imagesTs -o ./$test_dir -d $task -c 3d_fullres -f 1
